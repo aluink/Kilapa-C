@@ -1,6 +1,11 @@
 #include <stdio.h>
 
+#include "board.h"
+
 int main() {
-	printf("Hello World!\n");
+	CheckerBoard *board = newBoard();
+
+	printBoard(board);
+
 	return 0;
 }
