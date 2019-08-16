@@ -1,11 +1,18 @@
 typedef enum _Piece {
-	WKING, WQUEEN, WROOK, WKNIGHT, WBISHOP, WPAWN,
-	BKING, BQUEEN, BROOK, BKNIGHT, BBISHOP, BPAWN
+	BKING = -6, BQUEEN, BROOK, BKNIGHT, BBISHOP, BPAWN,
+	EMPTY,
+	WKING, WQUEEN, WROOK, WKNIGHT, WBISHOP, WPAWN
 } Piece;
 
 typedef struct {
 	int pos[64];	
-} CheckerBoard;
+} Board;
 
-CheckerBoard * newBoard();
-void printBoard(CheckerBoard *board);
+typedef struct {
+	int start;
+	int end;
+} Move;
+
+Board * newBoard();
+void printBoard(Board *board);
+void make_move(Board *board, Move *move);

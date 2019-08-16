@@ -3,9 +3,9 @@
 
 #include "board.h"
 
-CheckerBoard * newBoard() {
+Board * newBoard() {
 	int i;
-	CheckerBoard * board = malloc(sizeof(CheckerBoard));
+	Board * board = malloc(sizeof(Board));
 
 	board->pos[0] = board->pos[7] = WROOK;
 	board->pos[1] = board->pos[6] = WKNIGHT;
@@ -22,7 +22,7 @@ CheckerBoard * newBoard() {
 		board->pos[15] = WPAWN;
 
 	for (i = 16;i < 48;i++) {
-		board->pos[i] = 50;
+		board->pos[i] = EMPTY;
 	}
 
 	board->pos[56] = board->pos[63] = BROOK;
@@ -43,28 +43,24 @@ CheckerBoard * newBoard() {
 }
 
 
-void printBoard(CheckerBoard *board) {
+void printBoard(Board *board) {
 	for (int row = 7;row >= 0; row--) {
 		printf("\n   +---+---+---+---+---+---+---+---+\n %d ", row+1);
 		for (int col = 0;col < 8;col++) {
 			char c;
 			int piece = ((int)board->pos[row*8+col]);
-		 	int type = piece % 6;
-			int color = piece / 6;
-			switch(type) {
+			int color = piece < 0 ? -1 : 1;
+			switch(piece * color) {
 				case WKING: c = 'K'; break; 
 				case WQUEEN: c = 'Q'; break; 
 				case WROOK: c = 'R'; break; 
 				case WKNIGHT: c = 'N'; break; 
 				case WBISHOP: c = 'B'; break; 
 				case WPAWN: c = 'P'; break;
-			}
-			if (piece == 50) {
-				color = 0;
-				c = ' ';
+				case EMPTY: c = ' '; break;
 			}
 
-			printf("|%c%c ", color == 0 ? ' ' : '*', c);
+			printf("|%c%c ", color < 0 ? '*' : ' ', c);
 			
 		}	
 		printf("|");
@@ -72,4 +68,10 @@ void printBoard(CheckerBoard *board) {
 	printf("\n   +---+---+---+---+---+---+---+---+");
 	printf("\n     A   B   C   D   E   F   G   H\n\n");
 }
+
+void make_move(Board *board, Move *move) {
+	board->pos[move->end] = board->pos[move->start];
+	board->pos[move->start] = EMPTY;
+}
+
 
