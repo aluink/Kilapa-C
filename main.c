@@ -4,7 +4,7 @@
 
 #include "board.h"
 
-#define COMMAND_COUNT 3
+#define COMMAND_COUNT 4
 
 typedef struct _ClientState {
 	Board *board;
@@ -30,6 +30,14 @@ void print_commands_command(ClientState *state) {
 	}
 }
 
+void printB_command(ClientState *state) {
+	if (state->board) {
+		printBBoards(state->board);
+	} else {
+		printf("No board to print\n");
+	}
+}
+
 int handle_command(char *buffer, ClientState *state) {
 	for (int i = 0;i < COMMAND_COUNT;i++){
 		if (!strcmp(buffer, state->command_names[i])) {
@@ -47,13 +55,15 @@ int main() {
 	void (*funcs[COMMAND_COUNT])(ClientState *) = {
 		*print_command,
 		*new_command,
-		*print_commands_command
+		*print_commands_command,
+		*printB_command
 	};
 
 	char *command_names[COMMAND_COUNT] = {
 		"print",
 		"new",
-		"print_commands"
+		"print_commands",
+		"printB"
 	};
 
 	state->command_funcs = funcs;
