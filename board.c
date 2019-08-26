@@ -83,7 +83,7 @@ void printBoard(Board *board) {
 				case KNIGHT: c = 'N'; break; 
 				case BISHOP: c = 'B'; break; 
 				case PAWN: c = 'P'; break;
-				case EMPTY: c = ' '; break;
+				default: c = ' '; break;
 			}
 
 			printf("|%c%c ", color < 0 ? '*' : ' ', c);
@@ -109,10 +109,11 @@ void printBBoards(Board *board) {
 }
 
 void make_move(Board *board, Move *move) {
-	Piece p = board->pos[move->end] = board->pos[move->start];
+	int p = board->pos[move->end] = board->pos[move->start];
 	board->pos[move->start] = EMPTY;
 
-	int bb_idx = p < 0 ? -p - 1 : p + 5;
+	int bb_idx = p < 0 ? p* -1 - 1 : p + 5;
+	printf("%d %d\n", p, bb_idx);
 
 	board->bitboards[bb_idx] &= ~(1 << move->start);
 	board->bitboards[bb_idx] |= 1 << move->end;

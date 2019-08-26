@@ -1,3 +1,5 @@
+CFLAGS=-Wall -O2
+
 objects = main.o board.o
 
 kilapa : $(objects)

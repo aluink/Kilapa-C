@@ -51,7 +51,7 @@ int handle_command(char *buffer, ClientState *state) {
 
 int main() {
 	ClientState *state = malloc(sizeof(ClientState));
-	char buffer[256];
+	char *buffer = malloc(256);
 	void (*funcs[COMMAND_COUNT])(ClientState *) = {
 		*print_command,
 		*new_command,
@@ -71,7 +71,7 @@ int main() {
 
 	while(1) {
 		printf("Enter command: ");
-		scanf("%s", &buffer);
+		scanf("%s", buffer);
 
 		if (!strcmp(buffer, "quit")) {
 			break;
