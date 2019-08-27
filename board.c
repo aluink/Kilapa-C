@@ -19,7 +19,7 @@ Board * newBoard() {
 	board->bitboards[8] = 0x81; // ROOK
 	board->bitboards[9] = 0x42; // KNIGHT
 	board->bitboards[10] = 0x24; // BISHOP
-	board->bitboards[11] = 0x00FF; // PAWN
+	board->bitboards[11] = 0xFF00; // PAWN
 
 	board->pos[0] = board->pos[7] = ROOK;
 	board->pos[1] = board->pos[6] = KNIGHT;
@@ -65,6 +65,7 @@ const char * piece_name(int piece) {
 		case KNIGHT: return color > 0 ? "WKNIGHT" : "BKNIGHT";
 		case ROOK: return color > 0 ? "WROOK" : "BROOK";
 		case PAWN: return color > 0 ? "WPAWN" : "BPAWN";
+		default: return "UKNOWN";
 	}
 }
 
@@ -99,7 +100,7 @@ void printBBoards(Board *board) {
 		printf("board %s\n", piece_name(i < 6 ? -(i+1) : i - 5));
 		for(int row = 7;row >= 0;row--) {
 			for(int col = 0;col < 8;col++) {
-				printf("%d", board->bitboards[i] >> row * 8 + col & 1);
+				printf("%llu", board->bitboards[i] >> (row * 8 + col) & 1);
 			}
 			printf("\n");
 		}
@@ -108,7 +109,17 @@ void printBBoards(Board *board) {
 }
 
 void make_move(Board *board, Move *move) {
-	board->pos[move->end] = board->pos[move->start];
+	Piece p = board->pos[move->end] = board->pos[move->start];
 	board->pos[move->start] = EMPTY;
+
+	int bb_idx = p < 0 ? -p - 1 : p + 5;
+
+	board->bitboards[bb_idx] &= ~(1 << move->start);
+	board->bitboards[bb_idx] |= 1 << move->end;
+}
+
+Move * get_legal_moves(Board *board) {
+	
+	return NULL;
 }
 
