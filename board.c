@@ -120,7 +120,16 @@ void make_move(Board *board, Move *move) {
 }
 
 Move * get_legal_moves(Board *board) {
-	
+	int start_idx = board->turn == BLACK ? 0 : 1;
+	unsigned long long pieces = 0;
+	for(int i = 0;i < 6;i++){
+		pieces |= board->bitboards[i + start_idx];
+	}
+
+	while(pieces > 0) {
+		pieces &= pieces - 1;
+
+	}
 	return NULL;
 }
 
