@@ -115,8 +115,8 @@ void make_move(Board *board, Move *move) {
 	int bb_idx = p < 0 ? p* -1 - 1 : p + 5;
 	printf("%d %d\n", p, bb_idx);
 
-	board->bitboards[bb_idx] &= ~(1 << move->start);
-	board->bitboards[bb_idx] |= 1 << move->end;
+	board->bitboards[bb_idx] &= ~(1ULL << move->start);
+	board->bitboards[bb_idx] |= 1ULL << move->end;
 }
 
 Move * get_legal_moves(Board *board) {

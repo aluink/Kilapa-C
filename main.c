@@ -5,6 +5,7 @@
 #include "board.h"
 
 #define COMMAND_COUNT 4
+#define _CRT_SECURE_NO_WARNINGS
 
 typedef struct _ClientState {
 	Board *board;
@@ -52,6 +53,10 @@ int handle_command(char *buffer, ClientState *state) {
 int main() {
 	ClientState *state = malloc(sizeof(ClientState));
 	char *buffer = malloc(256);
+#ifndef WINDOWS
+	int read_size;
+#endif
+	int buffer_size = 256;
 	void (*funcs[COMMAND_COUNT])(ClientState *) = {
 		*print_command,
 		*new_command,
@@ -71,7 +76,12 @@ int main() {
 
 	while(1) {
 		printf("Enter command: ");
-		scanf("%s", buffer);
+#ifdef WINDOWS
+		scanf_s("%s", buffer, buffer_size);
+#else
+		read_size = getline(&buffer, &buffer_size, stdin);
+		buffer[read_size - 1] = NULL;
+#endif
 
 		if (!strcmp(buffer, "quit")) {
 			break;

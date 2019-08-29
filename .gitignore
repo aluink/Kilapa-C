@@ -1,2 +1,6 @@
 *.o
 kilapa
+Debug/**
+*.sln
+*.vcxproj*
+pch.*
