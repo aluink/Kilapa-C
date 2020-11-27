@@ -1,3 +1,5 @@
+#include "magic.h"
+
 typedef enum _Piece {
 	EMPTY = 0,
 	KING, QUEEN, ROOK, KNIGHT, BISHOP, PAWN

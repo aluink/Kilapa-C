@@ -53,10 +53,9 @@ int handle_command(char *buffer, ClientState *state) {
 int main() {
 	ClientState *state = malloc(sizeof(ClientState));
 	char *buffer = malloc(256);
-#ifndef WINDOWS
-	int read_size;
-#endif
-	int buffer_size = 256;
+	ssize_t read_size;
+	size_t buffer_size = 256;
+
 	void (*funcs[COMMAND_COUNT])(ClientState *) = {
 		*print_command,
 		*new_command,
@@ -74,14 +73,12 @@ int main() {
 	state->command_funcs = funcs;
 	state->command_names = command_names;
 
+	magic_init();
+
 	while(1) {
 		printf("Enter command: ");
-#ifdef WINDOWS
-		scanf_s("%s", buffer, buffer_size);
-#else
 		read_size = getline(&buffer, &buffer_size, stdin);
-		buffer[read_size - 1] = NULL;
-#endif
+		buffer[read_size - 1] = (char)NULL;
 
 		if (!strcmp(buffer, "quit")) {
 			break;

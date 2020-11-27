@@ -86,7 +86,7 @@ void printBoard(Board *board) {
 				default: c = ' '; break;
 			}
 
-			printf("|%c%c ", color < 0 ? '*' : ' ', c);
+			printf("|\033[%sm %c \033[0m", color < 0 ? "1;31" : "01;36", c);
 			
 		}	
 		printf("|");
