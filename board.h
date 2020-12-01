@@ -20,7 +20,15 @@ typedef struct {
 	int end;
 } Move;
 
+typedef struct {
+	Move *moves;
+	int count;
+} LegalMoves;
+
 Board * newBoard();
 void printBoard(Board *board);
 void printBBoards(Board *board);
 void make_move(Board *board, Move *move);
+void print_move(Move *move);
+LegalMoves * get_legal_moves(Board *board);
+void printBBoard(unsigned long long board);

@@ -1,7 +1,149 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 
 #include "board.h"
+
+#define LEFT -1
+#define RIGHT 1
+#define UP 8
+#define DOWN -8
+
+#define LEGAL_PIECES 2
+
+unsigned long long kingMasks [] = {
+		770L,
+		1797L,
+		3594L,
+		7188L,
+		14376L,
+		28752L,
+		57504L,
+		49216L,
+		197123L,
+		460039L,
+		920078L,
+		1840156L,
+		3680312L,
+		7360624L,
+		14721248L,
+		12599488L,
+		50463488L,
+		117769984L,
+		235539968L,
+		471079936L,
+		942159872L,
+		1884319744L,
+		3768639488L,
+		3225468928L,
+		12918652928L,
+		30149115904L,
+		60298231808L,
+		120596463616L,
+		241192927232L,
+		482385854464L,
+		964771708928L,
+		825720045568L,
+		3307175149568L,
+		7718173671424L,
+		15436347342848L,
+		30872694685696L,
+		61745389371392L,
+		123490778742784L,
+		246981557485568L,
+		211384331665408L,
+		846636838289408L,
+		1975852459884544L,
+		3951704919769088L,
+		7903409839538176L,
+		15806819679076352L,
+		31613639358152704L,
+		63227278716305408L,
+		54114388906344448L,
+		216739030602088448L,
+		505818229730443264L,
+		1011636459460886528L,
+		2023272918921773056L,
+		4046545837843546112L,
+		8093091675687092224L,
+		-2260560722335367168L,
+		-4593460513685372928L,
+		144959613005987840L,
+		362258295026614272L,
+		724516590053228544L,
+		1449033180106457088L,
+		2898066360212914176L,
+		5796132720425828352L,
+		-6854478632857894912L,
+		4665729213955833856L
+};
+
+unsigned long long knightMasks [] = {
+		132096L,
+		329728L,
+		659712L,
+		1319424L,
+		2638848L,
+		5277696L,
+		10489856L,
+		4202496L,
+		33816580L,
+		84410376L,
+		168886289L,
+		337772578L,
+		675545156L,
+		1351090312L,
+		2685403152L,
+		1075839008L,
+		8657044482L,
+		21609056261L,
+		43234889994L,
+		86469779988L,
+		172939559976L,
+		345879119952L,
+		687463207072L,
+		275414786112L,
+		2216203387392L,
+		5531918402816L,
+		11068131838464L,
+		22136263676928L,
+		44272527353856L,
+		88545054707712L,
+		175990581010432L,
+		70506185244672L,
+		567348067172352L,
+		1416171111120896L,
+		2833441750646784L,
+		5666883501293568L,
+		11333767002587136L,
+		22667534005174272L,
+		45053588738670592L,
+		18049583422636032L,
+		145241105196122112L,
+		362539804446949376L,
+		725361088165576704L,
+		1450722176331153408L,
+		2901444352662306816L,
+		5802888705324613632L,
+		-6913025356609880064L,
+		4620693356194824192L,
+		288234782788157440L,
+		576469569871282176L,
+		1224997833292120064L,
+		2449995666584240128L,
+		4899991333168480256L,
+		-8646761407372591104L,
+		1152939783987658752L,
+		2305878468463689728L,
+		1128098930098176L,
+		2257297371824128L,
+		4796069720358912L,
+		9592139440717824L,
+		19184278881435648L,
+		38368557762871296L,
+		4679521487814656L,
+		9077567998918656L
+};
 
 Board * newBoard() {
 	int i;
@@ -19,7 +161,7 @@ Board * newBoard() {
 	board->bitboards[8] = 0x81; // ROOK
 	board->bitboards[9] = 0x42; // KNIGHT
 	board->bitboards[10] = 0x24; // BISHOP
-	board->bitboards[11] = 0xFF00; // PAWN
+	board->bitboards[11] = 0; //0xFF00; // PAWN
 
 	board->pos[0] = board->pos[7] = ROOK;
 	board->pos[1] = board->pos[6] = KNIGHT;
@@ -95,15 +237,19 @@ void printBoard(Board *board) {
 	printf("\n     A   B   C   D   E   F   G   H\n\n");
 }
 
+void printBBoard(unsigned long long board) {
+	for(int row = 7;row >= 0;row--) {
+		for(int col = 0;col < 8;col++) {
+			printf("%llu", board >> (row * 8 + col) & 1);
+		}
+		printf("\n");
+	}
+}
+
 void printBBoards(Board *board) {
 	for(int i = 0;i < 12;i++) {
 		printf("board %s\n", piece_name(i < 6 ? -(i+1) : i - 5));
-		for(int row = 7;row >= 0;row--) {
-			for(int col = 0;col < 8;col++) {
-				printf("%llu", board->bitboards[i] >> (row * 8 + col) & 1);
-			}
-			printf("\n");
-		}
+		printBBoard(board->bitboards[i]);
 		printf("\n");
 	}
 }
@@ -119,17 +265,232 @@ void make_move(Board *board, Move *move) {
 	board->bitboards[bb_idx] |= 1ULL << move->end;
 }
 
-Move * get_legal_moves(Board *board) {
-	int start_idx = board->turn == BLACK ? 0 : 1;
-	unsigned long long pieces = 0;
-	for(int i = 0;i < 6;i++){
-		pieces |= board->bitboards[i + start_idx];
+void addAllMoves(LegalMoves *moves, int start, long mask){			
+	while(mask != 0){
+		int p = ffsll(mask) - 1;
+		mask &= mask-1;
+
+		moves->moves[moves->count].start = start;
+		moves->moves[moves->count].end = p;
+		moves->count++;
+	}
+}
+
+int getBishopMoves(int attacking, LegalMoves* moves, unsigned long long bishops, unsigned long long allBoard, unsigned long long otherBoard) {
+	return attacking;
+	while(bishops != 0) {
+		int start = ffsll(bishops) - 1;
+		bishops &= bishops - 1;
+		Magic m = magic_BMagic[start];
+		unsigned long long occ = allBoard & m.mask;
+		occ *= m.magic;
+		occ >>= 64 - m.shift;
+		occ &= magic_ShiftMask[m.shift];
+		occ = m.attSets[(int)occ];
+		unsigned long long attack = occ & otherBoard;
+		
+		if(attack != 0 && !attacking){
+			attacking = 1;
+			moves->count = 0;
+		}
+		
+		if(!attacking){
+			//moves.addAll(getMoveSet(start, occ & ~allBoard));
+		} else if(attack != 0){
+			//moves.addAll(getMoveSet(start, attack));
+		}
+	}
+	return attacking;
+}
+
+int getKnightMoves(int attacking, LegalMoves* moves, unsigned long long knights, unsigned long long allBoard, unsigned long long otherBoard) {
+		printBBoard(knights);
+	while(knights != 0){
+		int start = ffsll(knights) - 1;
+		knights &= knights - 1;
+		printf("\nstart: %d\n", start);
+		printBBoard(knightMasks[start]);
+		unsigned long long mask = knightMasks[start];
+		unsigned long long attack = mask & otherBoard;
+		
+		if(attack != 0 && !attacking){
+			attacking = 1;
+			moves->count = 0;
+		}
+		
+		if(!attacking){
+			addAllMoves(moves, start, mask & ~allBoard);
+		} else if(attack != 0){
+			addAllMoves(moves, start, attack);
+		}
+	}
+	return attacking;
+}
+
+int getRookMoves(int attacking, LegalMoves* moves, unsigned long long rooks, unsigned long long allBoard, unsigned long long otherBoard) {
+	return attacking;
+	while(rooks != 0){
+		int start = ffsll(rooks) - 1;
+		rooks &= rooks - 1;
+		Magic m = magic_RMagic[start];
+		unsigned long long occ = allBoard & m.mask;
+		occ *= m.magic;
+		occ >>= 64 - m.shift;
+		occ &= magic_ShiftMask[m.shift];
+		occ = m.attSets[(int)occ];
+		unsigned long long attack = occ & otherBoard;
+		
+		if(attack != 0 && !attacking){
+			attacking = 1;
+			moves->count = 0;
+		}
+		
+		if(!attacking){
+			//moves.addAll(getMoveSet(start, occ & ~allBoard));
+		} else if(attack != 0){
+			//moves.addAll(getMoveSet(start, attack));
+		}
 	}
 
-	while(pieces > 0) {
-		pieces &= pieces - 1;
+	return attacking;
+}
 
+// void getPawnAttack(int start, int tmp, int attacking, int * curMove, List<Move> moves, boolean promo){
+// 	if(tmp == b.getEnpassantPos()){
+// 		if(!attacking){
+// 			attacking = 1;
+// 			*curMove = 0;
+// 		}
+// 		moves.add(new Move(start, tmp, true));
+// 	}
+// 	if(b.getPos(tmp) != null && b.getPos(tmp).getColor() != b.getTurn()){
+// 		if(&& !attacking){
+// 			attacking = 1;
+// 			*curMove = 0;
+// 		}
+// 		if(promo){
+// 			moves.addAll(Arrays.asList(Move.promoSet(start, tmp, b.getTurn())));
+// 		} else {
+// 			moves.add(new Move(start, tmp));
+// 		}
+// 	} 
+	
+// }
+
+// void getPawnMove(int start, int tmp, List<Move> moves, boolean promo){
+// 	if(b.getPos(tmp) == null){
+// 		if(promo){
+// 			moves.addAll(Arrays.asList(Move.promoSet(start, tmp, b.getTurn())));
+// 		} else {
+// 			if(Math.abs(start-tmp) == 16){
+// 				moves.add(new Move(start, tmp));
+// 			} else {
+// 				moves.add(new Move(start, tmp));
+// 			}
+// 		}
+// 	}
+// }
+
+int getPawnMoves(int attacking, LegalMoves* moves, unsigned long long pawns, unsigned long long allBoard, unsigned long long otherBoard) {
+	return attacking;
+	// while(pawns != 0){
+	// 	int start = ffsll(pawns) - 1;
+	// 	pawns &= pawns - 1;
+	// 	int row = start/8;
+	// 	int starting, promo;
+	// 	int dir;		
+	// 	if(b.getTurn() == WHITE){
+	// 		dir = 8;
+	// 		starting = row == 1;
+	// 		promo = row == 6;
+	// 	}
+	// 	else{
+	// 		dir = -8;
+	// 		starting = row == 6;
+	// 		promo = row == 1;
+	// 	}
+		
+	// 	if(start%8 != 0)
+	// 		getPawnAttack(start, start+dir+LEFT, attacking, moves, promo);
+	// 	if(start%8 != 7)
+	// 		getPawnAttack(start, start+dir+RIGHT, attacking, moves, promo);
+		
+	// 	if(!attacking){
+	// 		getPawnMove(start, start+dir, moves, promo);
+	// 		if(starting && b.getPos(start+dir) == null)
+	// 			getPawnMove(start, start+dir+dir, moves, promo);
+	// 	}
+	// }		
+}
+
+int getQueenMoves(int attacking, LegalMoves* moves, unsigned long long kings, unsigned long long allBoard, unsigned long long otherBoard) {
+	return attacking;
+}
+
+int getKingMoves(int attacking, LegalMoves* moves, unsigned long long kings, unsigned long long allBoard, unsigned long long otherBoard) {
+	while(kings != 0){
+		int start = ffsll(kings) - 1;
+		kings &= kings - 1;
+		unsigned long long mask = kingMasks[start];
+		unsigned long long attack = mask & otherBoard;
+		
+		if(attack != 0 && !attacking){
+			attacking = 1;
+			moves->count = 0;
+		}
+		
+		if(!attacking){
+			addAllMoves(moves, start, mask & ~allBoard);
+		} else if(attack != 0){
+			addAllMoves(moves, start, attack);
+		}
 	}
-	return NULL;
+	return attacking;
+}
+
+// /*
+// 	* For kings and knights
+// 	*/
+
+
+LegalMoves * get_legal_moves(Board *board) {
+	int attacking = 0;
+	LegalMoves *lms = malloc(sizeof(LegalMoves));
+	unsigned long long allBoard = 0ULL;
+	unsigned long long otherBoard = 0ULL;
+	int turnOffset = board->turn == BLACK ? 0 : 6;
+
+
+	lms->moves = malloc(sizeof(Move)*64);
+	lms->count = 0;
+	
+	int (*funcs[6])(int attacking, LegalMoves* moves, unsigned long long rooks, unsigned long long allBoard, unsigned long long otherBoard) = {
+		getKingMoves,
+		getQueenMoves,
+		getRookMoves,
+		getKnightMoves,
+		getBishopMoves,
+		getPawnMoves
+	};
+
+
+	for(int i = 0;i < 12;i++) {
+		allBoard |= board->bitboards[i];
+		
+		if ((i < 6 && board->turn == BLACK) || (i >= 6 && board->turn == WHITE)) {
+			otherBoard |= board->bitboards[i];
+		}
+	}
+
+	for(int i = 0;i < 6;i++) {
+		attacking = funcs[i](
+			attacking,
+			lms,
+			board->bitboards[i + turnOffset],
+			allBoard,
+			otherBoard);
+	}
+
+	return lms;
 }
 

@@ -4,9 +4,11 @@
 		{
 			"type": "process",
 			"label": "Run Makefile",
-			
 			"command": "/usr/bin/make",
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"problemMatcher": [
 				"$gcc"
 			]
@@ -14,7 +16,6 @@
 		{
 			"type": "process",
 			"label": "Clean",
-			
 			"command": "/usr/bin/make",
 			"args": [
 				"clean"

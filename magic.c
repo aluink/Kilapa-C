@@ -1,14 +1,21 @@
 #include "stdlib.h"
+#include "magic.h"
+#include <stdio.h>
 
 #define LEFT -1
 #define RIGHT 1
 #define UP 8
 #define DOWN -8
 
-unsigned long long ShiftMask[] = {
-  0x0,0x1,0x3,0x7,0xF,0x1F,0x3F,0x7F,0xFF,
-  0x1FF,0x3FF,0x7FF,0xFFF,0x1FFF,0x3FFF,0x7FFF,0xFFFF
-};
+void fooPrint(unsigned long long board) {
+  for(int row = 7;row >= 0;row--) {
+    for(int col = 0;col < 8;col++) {
+      printf("%llu", board >> (row * 8 + col) & 1);
+    }
+    printf("\n");
+  }               
+  printf("\n");
+}
 
 int RShift[] = {
   12,11,11,11,11,11,11,12,
@@ -21,6 +28,10 @@ int RShift[] = {
   12,11,11,11,11,11,11,12
 };
 
+/***************************
+ * The number of positions *
+ * in the Occupancy mask   *
+ * ************************/
 int BShift[] = {
   6,5,5,5,5,5,5,6,
   5,5,5,5,5,5,5,5,
@@ -99,6 +110,13 @@ unsigned long long ROccMasks[] = {
   9115426935197958144ULL,
 };
 
+/**************************************
+ * An occupancy mask of positions     *
+ * attacked by a Bishop at position   *
+ * `index`. Excludes the square the   *
+ * Bishop sits on and the outer edges *
+ * of the board                       *
+ *************************************/
 unsigned long long BOccMasks[] = {
   18049651735527936ULL,
   70506452091904ULL,
@@ -300,16 +318,6 @@ unsigned long long magic_BMagicN[] = {
       0x40102000a0a60140ULL,
 };
 
-typedef struct _Magic {
-  unsigned long long mask;
-  unsigned long int shift;
-  unsigned long long magic;
-  unsigned long long *attSets;
-} Magic;
-
-Magic *magic_RMagic;
-Magic *magic_BMagic;
-
 int initialized = 0;
 
 void initmagic_BMagic() {
@@ -386,7 +394,7 @@ void initmagic_BMagic() {
           break;
       }
 
-      magic_BMagic[i].attSets[(int)((bb * magic_BMagic[i].magic) >> (64 - magic_BMagic[i].shift) & ShiftMask[magic_BMagic[i].shift])] = attSet;
+      magic_BMagic[i].attSets[(int)((bb * magic_BMagic[i].magic) >> (64 - magic_BMagic[i].shift) & magic_ShiftMask[magic_BMagic[i].shift])] = attSet;
 
     }
   }
@@ -466,13 +474,18 @@ void initmagic_RMagic() {
         if ((bb >> bit & 1L) == 1)
           break;
       }
-      magic_RMagic[i].attSets[(int)((bb * magic_RMagic[i].magic) >> (64 - magic_RMagic[i].shift) & ShiftMask[magic_RMagic[i].shift])] = attSet;
+
+      magic_RMagic[i].attSets[(int)((bb * magic_RMagic[i].magic) >> (64 - magic_RMagic[i].shift) & magic_ShiftMask[magic_RMagic[i].shift])] = attSet;
     }
   }
 }
 
 void magic_init() {
   if (!initialized) {
+    for (int i = 0;i < 17;i++) {
+      magic_ShiftMask[i] = (1 << i) - 1;
+    }
+
     magic_RMagic = malloc(sizeof(Magic) * 64);
     magic_BMagic = malloc(sizeof(Magic) * 64);
     initmagic_BMagic();
