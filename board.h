@@ -16,14 +16,18 @@ typedef struct {
 } Board;
 
 typedef struct {
-	int start;
-	int end;
+	short start;
+	short end;
+	short enpassent;
+	short capturePiece;
 } Move;
 
 typedef struct {
 	Move *moves;
 	int count;
 } LegalMoves;
+
+typedef unsigned long long BitBoard;
 
 Board * newBoard();
 void printBoard(Board *board);

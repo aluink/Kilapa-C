@@ -151,7 +151,7 @@ Board * newBoard() {
 
 	board->bitboards[0] = 0x1000000000000000; // -KING
 	board->bitboards[1] = 0x0800000000000000; // -QUEEN
-	board->bitboards[2] = 0x8100000000000000; // -ROOK
+	board->bitboards[2] = 0x8100000000002000; // -ROOK
 	board->bitboards[3] = 0x4200000000000000; // -KNIGHT
 	board->bitboards[4] = 0x2400000000000000; // -BISHOP
 	board->bitboards[5] = 0x00FF000000000000; // -PAWN
@@ -161,23 +161,23 @@ Board * newBoard() {
 	board->bitboards[8] = 0x81; // ROOK
 	board->bitboards[9] = 0x42; // KNIGHT
 	board->bitboards[10] = 0x24; // BISHOP
-	board->bitboards[11] = 0; //0xFF00; // PAWN
+	board->bitboards[11] = 0xFF0000; // PAWN
 
 	board->pos[0] = board->pos[7] = ROOK;
 	board->pos[1] = board->pos[6] = KNIGHT;
 	board->pos[2] = board->pos[5] = BISHOP;
 	board->pos[3] = QUEEN;
 	board->pos[4] = KING;
-	board->pos[8] =
-		board->pos[9]  =
-		board->pos[10] =
-		board->pos[11] =
-		board->pos[12] = 
-		board->pos[13] =
-		board->pos[14] =
-		board->pos[15] = PAWN;
+	board->pos[16] =
+		board->pos[17]  =
+		board->pos[18] =
+		board->pos[19] =
+		board->pos[20] = 
+		board->pos[21] =
+		board->pos[22] =
+		board->pos[23] = PAWN;
 
-	for (i = 16;i < 48;i++) {
+	for (i = 24;i < 48;i++) {
 		board->pos[i] = EMPTY;
 	}
 
@@ -195,6 +195,7 @@ Board * newBoard() {
 		board->pos[54] =
 		board->pos[55] = -PAWN;
 
+	board->turn = WHITE;
 	return board;
 }
 
@@ -244,6 +245,7 @@ void printBBoard(unsigned long long board) {
 		}
 		printf("\n");
 	}
+	printf("\n");
 }
 
 void printBBoards(Board *board) {
@@ -263,6 +265,10 @@ void make_move(Board *board, Move *move) {
 
 	board->bitboards[bb_idx] &= ~(1ULL << move->start);
 	board->bitboards[bb_idx] |= 1ULL << move->end;
+
+	if (move->capturePiece > -1) {
+		board->bitboards[move->capturePiece] &= ~(1ULL << move->end);
+	}
 }
 
 void addAllMoves(LegalMoves *moves, int start, long mask){			
@@ -276,8 +282,8 @@ void addAllMoves(LegalMoves *moves, int start, long mask){
 	}
 }
 
-int getBishopMoves(int attacking, LegalMoves* moves, unsigned long long bishops, unsigned long long allBoard, unsigned long long otherBoard) {
-	return attacking;
+int getBishopMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long allBoard, unsigned long long otherBoard) {
+	BitBoard bishops = board->bitboards[board->turn == BLACK ? 4 : 10];
 	while(bishops != 0) {
 		int start = ffsll(bishops) - 1;
 		bishops &= bishops - 1;
@@ -295,21 +301,19 @@ int getBishopMoves(int attacking, LegalMoves* moves, unsigned long long bishops,
 		}
 		
 		if(!attacking){
-			//moves.addAll(getMoveSet(start, occ & ~allBoard));
+			addAllMoves(moves, start, occ & ~allBoard);
 		} else if(attack != 0){
-			//moves.addAll(getMoveSet(start, attack));
+			addAllMoves(moves, start, attack);
 		}
 	}
 	return attacking;
 }
 
-int getKnightMoves(int attacking, LegalMoves* moves, unsigned long long knights, unsigned long long allBoard, unsigned long long otherBoard) {
-		printBBoard(knights);
+int getKnightMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long allBoard, unsigned long long otherBoard) {
+	BitBoard knights = board->bitboards[board->turn == BLACK ? 3 : 9];
 	while(knights != 0){
 		int start = ffsll(knights) - 1;
 		knights &= knights - 1;
-		printf("\nstart: %d\n", start);
-		printBBoard(knightMasks[start]);
 		unsigned long long mask = knightMasks[start];
 		unsigned long long attack = mask & otherBoard;
 		
@@ -327,8 +331,8 @@ int getKnightMoves(int attacking, LegalMoves* moves, unsigned long long knights,
 	return attacking;
 }
 
-int getRookMoves(int attacking, LegalMoves* moves, unsigned long long rooks, unsigned long long allBoard, unsigned long long otherBoard) {
-	return attacking;
+int getRookMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long allBoard, unsigned long long otherBoard) {
+	BitBoard rooks = board->bitboards[board->turn == BLACK ? 2 : 8];
 	while(rooks != 0){
 		int start = ffsll(rooks) - 1;
 		rooks &= rooks - 1;
@@ -346,9 +350,9 @@ int getRookMoves(int attacking, LegalMoves* moves, unsigned long long rooks, uns
 		}
 		
 		if(!attacking){
-			//moves.addAll(getMoveSet(start, occ & ~allBoard));
+			addAllMoves(moves, start, occ & ~allBoard);
 		} else if(attack != 0){
-			//moves.addAll(getMoveSet(start, attack));
+			addAllMoves(moves, start, attack);
 		}
 	}
 
@@ -391,7 +395,7 @@ int getRookMoves(int attacking, LegalMoves* moves, unsigned long long rooks, uns
 // 	}
 // }
 
-int getPawnMoves(int attacking, LegalMoves* moves, unsigned long long pawns, unsigned long long allBoard, unsigned long long otherBoard) {
+int getPawnMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long allBoard, unsigned long long otherBoard) {
 	return attacking;
 	// while(pawns != 0){
 	// 	int start = ffsll(pawns) - 1;
@@ -423,16 +427,19 @@ int getPawnMoves(int attacking, LegalMoves* moves, unsigned long long pawns, uns
 	// }		
 }
 
-int getQueenMoves(int attacking, LegalMoves* moves, unsigned long long kings, unsigned long long allBoard, unsigned long long otherBoard) {
-	return attacking;
+int getQueenMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long allBoard, unsigned long long otherBoard) {
+	attacking = getBishopMoves(attacking, moves, board, allBoard, otherBoard);
+	return getRookMoves(attacking, moves, board, allBoard, otherBoard);
 }
 
-int getKingMoves(int attacking, LegalMoves* moves, unsigned long long kings, unsigned long long allBoard, unsigned long long otherBoard) {
+int getKingMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long allBoard, unsigned long long otherBoard) {
+	BitBoard kings = board->bitboards[board->turn == BLACK ? 0 : 6];
 	while(kings != 0){
 		int start = ffsll(kings) - 1;
 		kings &= kings - 1;
 		unsigned long long mask = kingMasks[start];
 		unsigned long long attack = mask & otherBoard;
+		printBBoard(attack);
 		
 		if(attack != 0 && !attacking){
 			attacking = 1;
@@ -448,23 +455,16 @@ int getKingMoves(int attacking, LegalMoves* moves, unsigned long long kings, uns
 	return attacking;
 }
 
-// /*
-// 	* For kings and knights
-// 	*/
-
-
 LegalMoves * get_legal_moves(Board *board) {
 	int attacking = 0;
 	LegalMoves *lms = malloc(sizeof(LegalMoves));
 	unsigned long long allBoard = 0ULL;
 	unsigned long long otherBoard = 0ULL;
-	int turnOffset = board->turn == BLACK ? 0 : 6;
-
-
+	
 	lms->moves = malloc(sizeof(Move)*64);
 	lms->count = 0;
 	
-	int (*funcs[6])(int attacking, LegalMoves* moves, unsigned long long rooks, unsigned long long allBoard, unsigned long long otherBoard) = {
+	int (*funcs[6])(int attacking, LegalMoves* moves, Board *board, unsigned long long allBoard, unsigned long long otherBoard) = {
 		getKingMoves,
 		getQueenMoves,
 		getRookMoves,
@@ -477,7 +477,7 @@ LegalMoves * get_legal_moves(Board *board) {
 	for(int i = 0;i < 12;i++) {
 		allBoard |= board->bitboards[i];
 		
-		if ((i < 6 && board->turn == BLACK) || (i >= 6 && board->turn == WHITE)) {
+		if ((i < 6 && board->turn == WHITE) || (i >= 6 && board->turn == BLACK)) {
 			otherBoard |= board->bitboards[i];
 		}
 	}
@@ -486,11 +486,10 @@ LegalMoves * get_legal_moves(Board *board) {
 		attacking = funcs[i](
 			attacking,
 			lms,
-			board->bitboards[i + turnOffset],
+			board,
 			allBoard,
 			otherBoard);
 	}
 
 	return lms;
 }
-
