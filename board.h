@@ -1,5 +1,3 @@
-#include "magic.h"
-
 typedef enum _Piece {
 	EMPTY = 0,
 	KING, QUEEN, ROOK, KNIGHT, BISHOP, PAWN
@@ -34,5 +32,6 @@ void printBoard(Board *board);
 void printBBoards(Board *board);
 void make_move(Board *board, Move *move);
 void print_move(Move *move);
+void magic_init();
 LegalMoves * get_legal_moves(Board *board);
 void printBBoard(unsigned long long board);
