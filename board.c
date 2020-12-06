@@ -695,6 +695,65 @@ Board * newBoard() {
 	return board;
 }
 
+void set_pos(Board *board, int pos, int piece, int color) {
+  board->pos[pos] = piece * color;
+  board->bitboards[piece + color == BLACK ? 0 : 6] |= 1ULL << pos;
+}
+
+void load_fen(Board *board, const char * fen, int *error) {
+  *error = 0;
+  int row = 7, col = 0, idx = 0;
+  char c;
+  for (int i = 0;i < 64;i++) {
+    board->pos[i] = EMPTY;
+  }
+
+  for (int i = 0;i < 12;i++) {
+    board->bitboards[i] = 0ULL;
+  }
+
+  for (;row >= 0;row--) {
+    for (col = 0;col < 8;) {
+      c = fen[idx++];
+      if (c >= '1' && c <= '8') {
+        col += c - '0';
+        continue;
+      }
+
+      switch (c) {
+        case 'k': set_pos(board, row * 8 + col++, KING, BLACK); break;
+        case 'q': set_pos(board, row * 8 + col++, QUEEN, BLACK); break;
+        case 'r': set_pos(board, row * 8 + col++, ROOK, BLACK); break;
+        case 'n': set_pos(board, row * 8 + col++, KNIGHT, BLACK); break;
+        case 'b': set_pos(board, row * 8 + col++, BISHOP, BLACK); break;
+        case 'p': set_pos(board, row * 8 + col++, PAWN, BLACK); break;
+        case 'K': set_pos(board, row * 8 + col++, KING, WHITE); break;
+        case 'Q': set_pos(board, row * 8 + col++, QUEEN, WHITE); break;
+        case 'R': set_pos(board, row * 8 + col++, ROOK, WHITE); break;
+        case 'N': set_pos(board, row * 8 + col++, KNIGHT, WHITE); break;
+        case 'B': set_pos(board, row * 8 + col++, BISHOP, WHITE); break;
+        case 'P': set_pos(board, row * 8 + col++, PAWN, WHITE); break;
+      }
+    }
+    c = fen[idx++];
+
+    if (!(row == 0 && c == ' ') && !(row >= 0 && c == '/')) {
+      printf("idx: %d\nchar: %c\nrow: %d, col: %d\n", idx, c, row, col);
+      *error = 1;
+      return;
+    }
+  }
+
+  if (fen[idx] == 'w') {
+    board->turn = WHITE;
+  } else {
+    board->turn = BLACK;
+  }
+
+  printBoard(board);
+
+}
+
 const char * piece_name(int piece) {
 	int color = piece > 0 ? 1 : -1;
 	switch(piece * color) {
@@ -709,6 +768,7 @@ const char * piece_name(int piece) {
 }
 
 void printBoard(Board *board) {
+  printf("%s to move", board->turn == WHITE ? "WHITE" : "BLACK");
 	for (int row = 7;row >= 0; row--) {
 		printf("\n   +---+---+---+---+---+---+---+---+\n %d ", row+1);
 		for (int col = 0;col < 8;col++) {
@@ -935,7 +995,6 @@ int getKingMoves(int attacking, LegalMoves* moves, Board *board, unsigned long l
 		kings &= kings - 1;
 		unsigned long long mask = kingMasks[start];
 		unsigned long long attack = mask & otherBoard;
-		printBBoard(attack);
 		
 		if(attack != 0 && !attacking){
 			attacking = 1;
