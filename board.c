@@ -700,10 +700,13 @@ void set_pos(Board *board, int pos, int piece, int color) {
   board->bitboards[piece + color == BLACK ? 0 : 6] |= 1ULL << pos;
 }
 
-void load_fen(Board *board, const char * fen, int *error) {
+void load_fen(Board *board, char * fen, int *error) {
   *error = 0;
   int row = 7, col = 0, idx = 0;
   char c;
+
+  printf("loading fen: %s\n", fen);
+
   for (int i = 0;i < 64;i++) {
     board->pos[i] = EMPTY;
   }

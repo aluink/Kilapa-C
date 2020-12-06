@@ -33,6 +33,6 @@ void printBBoards(Board *board);
 void make_move(Board *board, Move *move);
 void print_move(Move *move);
 void magic_init();
-void load_fen(Board *board, const char *fen, int *error);
+void load_fen(Board *board, char *fen, int *error);
 LegalMoves * get_legal_moves(Board *board);
 void printBBoard(unsigned long long board);

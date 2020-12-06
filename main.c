@@ -11,6 +11,7 @@ typedef struct _ClientState {
     Board *board;
     void (**command_funcs) (struct _ClientState*); 
     char **command_names;
+    char *command_buffer;
 } ClientState;
 
 void print_command(ClientState * state) {
@@ -41,7 +42,7 @@ void printB_command(ClientState *state) {
 
 int handle_command(char *buffer, ClientState *state) {
     for (int i = 0;i < COMMAND_COUNT;i++){
-        if (!strcmp(buffer, state->command_names[i])) {
+        if (!strncmp(buffer, state->command_names[i], strlen(state->command_names[i]))) {
             state->command_funcs[i](state);
             return 0;
         }
@@ -66,7 +67,8 @@ void printLMs_command(ClientState *state) {
 
 void set_fen(ClientState *state) {
     int error;
-    load_fen(state->board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w", &error);
+    char *fen = &state->command_buffer[8];
+    load_fen(state->board, fen, &error);
 
     if (error) {
         printf("Invalid fen\n");
@@ -77,7 +79,6 @@ void test_command(ClientState *state) { }
 
 int main() {
     ClientState *state = malloc(sizeof(ClientState));
-    char *buffer = malloc(256);
     ssize_t read_size;
     size_t buffer_size = 256;
 
@@ -101,6 +102,7 @@ int main() {
         "test"
     };
 
+    state->command_buffer = malloc(256);
     state->command_funcs = funcs;
     state->command_names = command_names;
 
@@ -108,16 +110,16 @@ int main() {
 
     while(1) {
         printf("Enter command: ");
-        read_size = getline(&buffer, &buffer_size, stdin);
-        buffer[read_size - 1] = (char)NULL;
+        read_size = getline(&state->command_buffer, &buffer_size, stdin);
+        state->command_buffer[read_size - 1] = (char)NULL;
 
-        if (!strcmp(buffer, "quit")) {
+        if (!strcmp(state->command_buffer, "quit")) {
             break;
-        } else if (handle_command(buffer, state)) {
-            int colStart = buffer[0] - 'a';
-            int rowStart = buffer[1] - '1';
-            int colEnd = buffer[2] - 'a';
-            int rowEnd = buffer[3] - '1';
+        } else if (handle_command(state->command_buffer, state)) {
+            int colStart = state->command_buffer[0] - 'a';
+            int rowStart = state->command_buffer[1] - '1';
+            int colEnd = state->command_buffer[2] - 'a';
+            int rowEnd = state->command_buffer[3] - '1';
 
             Move *m = malloc(sizeof(Move));
             m->start = rowStart * 8 + colStart;
