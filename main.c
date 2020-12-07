@@ -24,6 +24,7 @@ void print_command(ClientState * state) {
 
 void new_command (ClientState *state) {
     state->board = newBoard();
+    
 }
 
 void print_commands_command(ClientState *state) {
@@ -41,7 +42,9 @@ void printB_command(ClientState *state) {
 }
 
 int handle_command(char *buffer, ClientState *state) {
+    printf("buffer: %s\n", buffer);
     for (int i = 0;i < COMMAND_COUNT;i++){
+        printf("%ld %s\n", strlen(state->command_names[i]), state->command_names[i]);
         if (!strncmp(buffer, state->command_names[i], strlen(state->command_names[i]))) {
             state->command_funcs[i](state);
             return 0;
@@ -55,6 +58,7 @@ void printLMs_command(ClientState *state) {
     LegalMoves *lms = get_legal_moves(state->board);
 
     printf("StartLMS Print:\n");
+    printf("Count: %d\n", lms->count);
     for(int i = 0;i < lms->count;i++){
         char startCol = (lms->moves[i].start % (short)8) + 'a';
         char startRow = (lms->moves[i].start / (short)8) + '1';
@@ -83,21 +87,21 @@ int main() {
     size_t buffer_size = 256;
 
     void (*funcs[COMMAND_COUNT])(ClientState *) = {
-        *print_command,
         *new_command,
         *print_commands_command,
         *printB_command,
         *printLMs_command,
+        *print_command,
         *set_fen,
         *test_command
     };
 
     char *command_names[COMMAND_COUNT] = {
-        "print",
         "new",
         "print_commands",
         "printB",
         "printLMS",
+        "print",
         "loadFen",
         "test"
     };
