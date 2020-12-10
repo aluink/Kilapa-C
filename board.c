@@ -703,7 +703,12 @@ Board * newBoard() {
 
 void set_pos(Board *board, int pos, int piece, int color) {
   board->pos[pos] = piece * color;
+  for (int i = 0;i < 12;i++) {
+    board->bitboards[i] &= ~(1ULL << pos);
+  }
+
   board->bitboards[piece + (color == BLACK ? -1 : 5)] |= 1ULL << pos;
+
 }
 
 void load_fen(Board *board, char * fen, int *error) {
@@ -822,9 +827,9 @@ void printBBoards(Board *board) {
 }
 
 void make_move(Board *board, Move *move) {
-  int destPiece = board->pos[move->end];
-	int movingPiece = board->pos[move->end] = board->pos[move->start];
-	board->pos[move->start] = EMPTY;
+  int destPiece = board->pos[(int)move->end];
+	int movingPiece = board->pos[(int)move->end] = board->pos[(int)move->start];
+	board->pos[(int)move->start] = EMPTY;
 
 	int bb_idx = movingPiece < 0 ? -movingPiece - 1 : movingPiece + 5;
 	printf("%d %d\n", movingPiece, bb_idx);
@@ -929,72 +934,90 @@ int getRookMoves(int attacking, LegalMoves* moves, Board *board, unsigned long l
 	return attacking;
 }
 
-// void getPawnAttack(int start, int tmp, int attacking, int * curMove, List<Move> moves, boolean promo){
-// 	if(tmp == b.getEnpassantPos()){
-// 		if(!attacking){
-// 			attacking = 1;
-// 			*curMove = 0;
-// 		}
-// 		moves.add(new Move(start, tmp, true));
-// 	}
-// 	if(b.getPos(tmp) != null && b.getPos(tmp).getColor() != b.getTurn()){
-// 		if(&& !attacking){
-// 			attacking = 1;
-// 			*curMove = 0;
-// 		}
-// 		if(promo){
-// 			moves.addAll(Arrays.asList(Move.promoSet(start, tmp, b.getTurn())));
-// 		} else {
-// 			moves.add(new Move(start, tmp));
-// 		}
-// 	} 
-	
-// }
+int getPawnAttack(int start, int tmp, Board *board, int attacking, LegalMoves * moves, int promo){
+	int i;
+  if(tmp == board->enpassant) {
+		if(!attacking){
+			attacking = 1;
+			moves->count = 0;
+		}
+		moves->moves[moves->count].start = start;
+		moves->moves[moves->count].end = tmp;
+		moves->count++;
 
-// void getPawnMove(int start, int tmp, List<Move> moves, boolean promo){
-// 	if(b.getPos(tmp) == null){
-// 		if(promo){
-// 			moves.addAll(Arrays.asList(Move.promoSet(start, tmp, b.getTurn())));
-// 		} else {
-// 			if(Math.abs(start-tmp) == 16){
-// 				moves.add(new Move(start, tmp));
-// 			} else {
-// 				moves.add(new Move(start, tmp));
-// 			}
-// 		}
-// 	}
-// }
+    return attacking;
+	}
 
-int getPawnMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long bishops, unsigned long long allBoard, unsigned long long otherBoard) {
-	return attacking;
-	// while(pawns != 0){
-	// 	int start = ffsll(pawns) - 1;
-	// 	pawns &= pawns - 1;
-	// 	int row = start/8;
-	// 	int starting, promo;
-	// 	int dir;		
-	// 	if(b.getTurn() == WHITE){
-	// 		dir = 8;
-	// 		starting = row == 1;
-	// 		promo = row == 6;
-	// 	}
-	// 	else{
-	// 		dir = -8;
-	// 		starting = row == 6;
-	// 		promo = row == 1;
-	// 	}
+	if(board->pos[tmp] != EMPTY && board->pos[tmp] * board->turn < 0){
+		if(!attacking){
+			attacking = 1;
+			moves->count = 0;
+		}
+
+		if(promo){
+      for(i= 1;i <= 5;i++) {
+        moves->moves[moves->count].start = start;
+        moves->moves[moves->count].end = tmp;
+        moves->moves[moves->count].promo = i * board->turn;
+        moves->count++;
+      }
+		} else {
+      moves->moves[moves->count].start = start;
+      moves->moves[moves->count].end = tmp;
+      moves->count++;
+		}
+	}
+
+  return attacking;
+}
+
+void getPawnMove(int start, int tmp, Board *board, LegalMoves * moves, int promo){
+	if(board->pos[tmp] == EMPTY){
+		if(promo){
+      for(int i = 1;i <= 5;i++) {
+        moves->moves[moves->count].start = start;
+        moves->moves[moves->count].end = tmp;
+        moves->moves[moves->count].promo = i * board->turn;
+        moves->count++;
+      }
+		} else {
+      moves->moves[moves->count].start = start;
+      moves->moves[moves->count].end = tmp;
+      moves->count++;
+		}
+	}
+}
+
+int getPawnMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long pawns, unsigned long long allBoard, unsigned long long otherBoard) {
+  int starting, promo, start;
+  int dir, row;		
+  int startingRow, promoRow;
+
+  dir = board->turn == BLACK ? -8 : 8;
+  startingRow = board->turn == BLACK ? 6 : 1;
+  promoRow = board->turn == BLACK ? 1 : 6;
+
+	while(pawns != 0){
+		start = ffsll(pawns) - 1;
+		pawns &= pawns - 1;
+		row = start % 8;
+
+    starting = row == startingRow;
+    promo = row == promoRow;
 		
-	// 	if(start%8 != 0)
-	// 		getPawnAttack(start, start+dir+LEFT, attacking, moves, promo);
-	// 	if(start%8 != 7)
-	// 		getPawnAttack(start, start+dir+RIGHT, attacking, moves, promo);
+		if(start%8 != 0) // attack to the left
+			attacking = getPawnAttack(start, start+dir+LEFT, board, attacking, moves, promo);
+		if(start%8 != 7) // attack to the right
+			attacking = getPawnAttack(start, start+dir+RIGHT, board, attacking, moves, promo);
 		
-	// 	if(!attacking){
-	// 		getPawnMove(start, start+dir, moves, promo);
-	// 		if(starting && b.getPos(start+dir) == null)
-	// 			getPawnMove(start, start+dir+dir, moves, promo);
-	// 	}
-	// }		
+		if(!attacking){
+			getPawnMove(start, start+dir, board, moves, promo);
+			if(starting && board->pos[start+dir] == EMPTY)
+				getPawnMove(start, start+dir+dir, board, moves, promo);
+		}
+	}
+
+  return attacking;
 }
 
 int getQueenMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long queens, unsigned long long allBoard, unsigned long long otherBoard) {

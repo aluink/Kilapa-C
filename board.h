@@ -11,13 +11,15 @@ typedef struct {
 	int pos[64];
 	unsigned long long bitboards[12];
 	Color turn;
+	int enpassant;
 } Board;
 
 typedef struct {
-	short start;
-	short end;
-	short enpassent;
-	short capturePiece;
+	char start;
+	char end;
+	char enpassent;
+	char capturePiece;
+	char promo;
 } Move;
 
 typedef struct {
