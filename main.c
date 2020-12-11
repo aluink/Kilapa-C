@@ -42,9 +42,7 @@ void printB_command(ClientState *state) {
 }
 
 int handle_command(char *buffer, ClientState *state) {
-    printf("buffer: %s\n", buffer);
     for (int i = 0;i < COMMAND_COUNT;i++){
-        printf("%ld %s\n", strlen(state->command_names[i]), state->command_names[i]);
         if (!strncmp(buffer, state->command_names[i], strlen(state->command_names[i]))) {
             state->command_funcs[i](state);
             return 0;
@@ -77,6 +75,14 @@ void set_fen(ClientState *state) {
     if (error) {
         printf("Invalid fen\n");
     }
+}
+
+int move_is_legal(Move *move, LegalMoves *moves) {
+    for (int i = 0;i < moves->count;i++) {
+        if (moves->moves[i].start == move->start && moves->moves[i].end == move->end)
+            return 1;
+    }
+    return 0;
 }
 
 void test_command(ClientState *state) { }
@@ -128,8 +134,14 @@ int main() {
             Move *m = malloc(sizeof(Move));
             m->start = rowStart * 8 + colStart;
             m->end = rowEnd * 8 + colEnd;
-            make_move(state->board, m);
-            printBoard(state->board);
+
+            LegalMoves *lms = get_legal_moves(state->board);
+            if (move_is_legal(m, lms)) {
+                make_move(state->board, m);
+                printBoard(state->board);
+            } else {
+                printf("Illegal Move\n");
+            }
             continue;
         }
     }

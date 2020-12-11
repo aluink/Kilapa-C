@@ -842,6 +842,8 @@ void make_move(Board *board, Move *move) {
     board->bitboards[bb_idx] &= ~(1ULL << move->end);
   }
 
+  board->turn *= -1;
+
 	// if (move->capturePiece > -1) {
 	// 	board->bitboards[move->capturePiece] &= ~(1ULL << move->end);
 	// }
