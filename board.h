@@ -23,7 +23,7 @@ typedef struct {
 } Move;
 
 typedef struct {
-	Move *moves;
+	Move moves[64];
 	int count;
 } LegalMoves;
 
@@ -36,5 +36,5 @@ void make_move(Board *board, Move *move);
 void print_move(Move *move);
 void magic_init();
 void load_fen(Board *board, char *fen, int *error);
-LegalMoves * get_legal_moves(Board *board);
+void get_legal_moves(Board *board, LegalMoves *lms);
 void printBBoard(unsigned long long board);

@@ -991,7 +991,7 @@ void getPawnMove(int start, int tmp, Board *board, LegalMoves * moves, int promo
 }
 
 int getPawnMoves(int attacking, LegalMoves* moves, Board *board, unsigned long long pawns, unsigned long long allBoard, unsigned long long otherBoard) {
-  int starting, promo, start;
+  int promo, start;
   int dir, row;		
   int startingRow, promoRow;
 
@@ -1002,9 +1002,8 @@ int getPawnMoves(int attacking, LegalMoves* moves, Board *board, unsigned long l
 	while(pawns != 0){
 		start = ffsll(pawns) - 1;
 		pawns &= pawns - 1;
-		row = start % 8;
+		row = start / 8;
 
-    starting = row == startingRow;
     promo = row == promoRow;
 		
 		if(start%8 != 0) // attack to the left
@@ -1014,7 +1013,7 @@ int getPawnMoves(int attacking, LegalMoves* moves, Board *board, unsigned long l
 		
 		if(!attacking){
 			getPawnMove(start, start+dir, board, moves, promo);
-			if(starting && board->pos[start+dir] == EMPTY)
+			if(row == startingRow && board->pos[start+dir] == EMPTY)
 				getPawnMove(start, start+dir+dir, board, moves, promo);
 		}
 	}
@@ -1048,13 +1047,11 @@ int getKingMoves(int attacking, LegalMoves* moves, Board *board, unsigned long l
 	return attacking;
 }
 
-LegalMoves * get_legal_moves(Board *board) {
+void get_legal_moves(Board *board, LegalMoves *lms) {
 	int attacking = 0;
-	LegalMoves *lms = malloc(sizeof(LegalMoves));
 	unsigned long long allBoard = 0ULL;
 	unsigned long long otherBoard = 0ULL;
 	
-	lms->moves = malloc(sizeof(Move)*64);
 	lms->count = 0;
 	
 	int (*funcs[6])(int attacking, LegalMoves* moves, Board *board, unsigned long long pieces, unsigned long long allBoard, unsigned long long otherBoard) = {
@@ -1084,6 +1081,4 @@ LegalMoves * get_legal_moves(Board *board) {
 			allBoard,
 			otherBoard);
 	}
-
-	return lms;
 }

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
+#include <fcntl.h>
 
 #include "board.h"
 
@@ -53,15 +55,17 @@ int handle_command(char *buffer, ClientState *state) {
 }
 
 void printLMs_command(ClientState *state) {
-    LegalMoves *lms = get_legal_moves(state->board);
+    LegalMoves lms;
+    
+    get_legal_moves(state->board, &lms);
 
     printf("StartLMS Print:\n");
-    printf("Count: %d\n", lms->count);
-    for(int i = 0;i < lms->count;i++){
-        char startCol = (lms->moves[i].start % (short)8) + 'a';
-        char startRow = (lms->moves[i].start / (short)8) + '1';
-        char endCol = (lms->moves[i].end % (short)8) + 'a';
-        char endRow = (lms->moves[i].end / (short)8) + '1';
+    printf("Count: %d\n", lms.count);
+    for(int i = 0;i < lms.count;i++){
+        char startCol = (lms.moves[i].start % (short)8) + 'a';
+        char startRow = (lms.moves[i].start / (short)8) + '1';
+        char endCol = (lms.moves[i].end % (short)8) + 'a';
+        char endRow = (lms.moves[i].end / (short)8) + '1';
         printf("%c%c%c%c\n", startCol, startRow, endCol, endRow);
     }
     printf("EndLMS Print:\n");
@@ -91,6 +95,10 @@ int main() {
     ClientState *state = malloc(sizeof(ClientState));
     ssize_t read_size;
     size_t buffer_size = 256;
+    LegalMoves lms;
+    time_t tloc;
+    char filename[64];
+    FILE * f;
 
     void (*funcs[COMMAND_COUNT])(ClientState *) = {
         *new_command,
@@ -116,6 +124,17 @@ int main() {
     state->command_funcs = funcs;
     state->command_names = command_names;
 
+    time(&tloc);
+
+    snprintf(filename, 64, "%ld.out", tloc);
+
+    printf("%s\n", filename);
+
+    f = fopen(filename, "w");
+    snprintf(state->command_buffer, buffer_size, "%s\n", filename);
+    fwrite(state->command_buffer, strlen(state->command_buffer), 1, f);
+    fclose(f);
+    
     magic_init();
 
     while(1) {
@@ -135,8 +154,8 @@ int main() {
             m->start = rowStart * 8 + colStart;
             m->end = rowEnd * 8 + colEnd;
 
-            LegalMoves *lms = get_legal_moves(state->board);
-            if (move_is_legal(m, lms)) {
+            get_legal_moves(state->board, &lms);
+            if (move_is_legal(m, &lms)) {
                 make_move(state->board, m);
                 printBoard(state->board);
             } else {
