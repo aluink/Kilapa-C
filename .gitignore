@@ -4,3 +4,4 @@ Debug/**
 *.sln
 *.vcxproj*
 pch.*
+debug.out

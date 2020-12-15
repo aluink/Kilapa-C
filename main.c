@@ -6,7 +6,7 @@
 
 #include "board.h"
 
-#define COMMAND_COUNT 7
+#define COMMAND_COUNT 8
 #define _CRT_SECURE_NO_WARNINGS
 
 typedef struct _ClientState {
@@ -71,6 +71,8 @@ void printLMs_command(ClientState *state) {
     printf("EndLMS Print:\n");
 }
 
+void xboard_command(ClientState *state) {}
+
 void set_fen(ClientState *state) {
     int error;
     char *fen = &state->command_buffer[8];
@@ -91,14 +93,28 @@ int move_is_legal(Move *move, LegalMoves *moves) {
 
 void test_command(ClientState *state) { }
 
-int main() {
+int main(int argc, char *argv[]) {
     ClientState *state = malloc(sizeof(ClientState));
     ssize_t read_size;
     size_t buffer_size = 256;
-    LegalMoves lms;
+    // LegalMoves lms;
     time_t tloc;
-    char filename[64];
+    char filename[256];
     FILE * f;
+
+    signal(SIGTERM, SIG_IGN);
+    signal(SIGTERM, SIG_IGN);
+
+    state->command_buffer = malloc(256);
+
+    time(&tloc);
+    snprintf(filename, 64, "/Users/holly/programs/Kilapa/c/debug.out");    
+    printf("%s\n", filename);
+    fflush(stdout);
+
+    f = fopen(filename, "w");
+    fprintf(f, "%s\n", filename);
+    fflush(f);
 
     void (*funcs[COMMAND_COUNT])(ClientState *) = {
         *new_command,
@@ -107,7 +123,8 @@ int main() {
         *printLMs_command,
         *print_command,
         *set_fen,
-        *test_command
+        *test_command,
+        *xboard_command
     };
 
     char *command_names[COMMAND_COUNT] = {
@@ -117,50 +134,46 @@ int main() {
         "printLMS",
         "print",
         "loadFen",
-        "test"
+        "test",
+        "xboard"
     };
 
-    state->command_buffer = malloc(256);
     state->command_funcs = funcs;
     state->command_names = command_names;
 
-    time(&tloc);
-
-    snprintf(filename, 64, "%ld.out", tloc);
-
-    printf("%s\n", filename);
-
-    f = fopen(filename, "w");
-    snprintf(state->command_buffer, buffer_size, "%s\n", filename);
-    fwrite(state->command_buffer, strlen(state->command_buffer), 1, f);
-    fclose(f);
-    
     magic_init();
 
     while(1) {
-        printf("Enter command: ");
+        // printf("Enter command: ");
         read_size = getline(&state->command_buffer, &buffer_size, stdin);
         state->command_buffer[read_size - 1] = (char)NULL;
 
+        fprintf(f, ">> %s\n", state->command_buffer);
+        fflush(f);
+
         if (!strcmp(state->command_buffer, "quit")) {
+            fclose(f);
             break;
         } else if (handle_command(state->command_buffer, state)) {
-            int colStart = state->command_buffer[0] - 'a';
-            int rowStart = state->command_buffer[1] - '1';
-            int colEnd = state->command_buffer[2] - 'a';
-            int rowEnd = state->command_buffer[3] - '1';
+            // int colStart = state->command_buffer[0] - 'a';
+            // int rowStart = state->command_buffer[1] - '1';
+            // int colEnd = state->command_buffer[2] - 'a';
+            // int rowEnd = state->command_buffer[3] - '1';
 
-            Move *m = malloc(sizeof(Move));
-            m->start = rowStart * 8 + colStart;
-            m->end = rowEnd * 8 + colEnd;
+            // Move *m = malloc(sizeof(Move));
+            // m->start = rowStart * 8 + colStart;
+            // m->end = rowEnd * 8 + colEnd;
 
-            get_legal_moves(state->board, &lms);
-            if (move_is_legal(m, &lms)) {
-                make_move(state->board, m);
-                printBoard(state->board);
-            } else {
-                printf("Illegal Move\n");
-            }
+            // get_legal_moves(state->board, &lms);
+            // if (move_is_legal(m, &lms)) {
+            //     make_move(state->board, m);
+            //     printBoard(state->board);
+            // } else {
+            //     printf("Illegal Move\n");
+            // }
+
+            fprintf(f, "<< %s\n", state->command_buffer);
+            fflush(f);
             continue;
         }
     }
