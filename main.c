@@ -98,23 +98,11 @@ int main(int argc, char *argv[]) {
     ssize_t read_size;
     size_t buffer_size = 256;
     // LegalMoves lms;
-    time_t tloc;
-    char filename[256];
-    FILE * f;
-
+    
     signal(SIGTERM, SIG_IGN);
     signal(SIGTERM, SIG_IGN);
 
     state->command_buffer = malloc(256);
-
-    time(&tloc);
-    snprintf(filename, 64, "/Users/holly/programs/Kilapa/c/debug.out");    
-    printf("%s\n", filename);
-    fflush(stdout);
-
-    f = fopen(filename, "w");
-    fprintf(f, "%s\n", filename);
-    fflush(f);
 
     void (*funcs[COMMAND_COUNT])(ClientState *) = {
         *new_command,
@@ -148,11 +136,7 @@ int main(int argc, char *argv[]) {
         read_size = getline(&state->command_buffer, &buffer_size, stdin);
         state->command_buffer[read_size - 1] = (char)NULL;
 
-        fprintf(f, ">> %s\n", state->command_buffer);
-        fflush(f);
-
         if (!strcmp(state->command_buffer, "quit")) {
-            fclose(f);
             break;
         } else if (handle_command(state->command_buffer, state)) {
             // int colStart = state->command_buffer[0] - 'a';
@@ -172,8 +156,6 @@ int main(int argc, char *argv[]) {
             //     printf("Illegal Move\n");
             // }
 
-            fprintf(f, "<< %s\n", state->command_buffer);
-            fflush(f);
             continue;
         }
     }
