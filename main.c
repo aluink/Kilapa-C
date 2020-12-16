@@ -68,7 +68,16 @@ void printLMs_command(ClientState *state) {
         char startRow = (lms.moves[i].start / (short)8) + '1';
         char endCol = (lms.moves[i].end % (short)8) + 'a';
         char endRow = (lms.moves[i].end / (short)8) + '1';
-        printf("\t%c%c%c%c\n", startCol, startRow, endCol, endRow);
+        char promo;
+        switch (lms.moves[i].promo * state->board->turn) {
+            case KING: promo = 'K'; break;
+            case QUEEN: promo = 'Q'; break;
+            case ROOK: promo = 'R'; break;
+            case KNIGHT: promo = 'N'; break;
+            case BISHOP: promo = 'B'; break;
+            default: promo = ' '; break;
+        }
+        printf("\t%c%c%c%c%c\n", startCol, startRow, endCol, endRow, promo);
     }
     printf("\n");
 }
@@ -93,13 +102,16 @@ int check_command_move(ClientState *state, Move *move) {
     int rowStart = state->command_buffer[1] - '1';
     int colEnd = state->command_buffer[2] - 'a';
     int rowEnd = state->command_buffer[3] - '1';
+    int promo = state->command_buffer[4];
 
     move->start = rowStart * 8 + colStart;
     move->end = rowEnd * 8 + colEnd;
-
+    
     if (move->start < 0 || move->start > 63 || move->end < 0 || move->end > 63) {
         return 0;
     }
+
+    if (promo > 0 && promo < 6) move->promo = promo;
 
     get_legal_moves(state->board, &lms);
 

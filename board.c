@@ -647,7 +647,7 @@ Board * newBoard() {
 	int i, error;
 	Board * board = malloc(sizeof(Board));
 
-  load_fen(board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w", &error);
+  load_fen(board, "rnbqkbnr/ppPppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w", &error);
   return board;
 
 
@@ -827,7 +827,7 @@ void printBBoards(Board *board) {
 }
 
 void make_move(Board *board, Move *move) {
-  int destPiece = board->pos[(int)move->end];
+	int destPiece = board->pos[(int)move->end];
 	int movingPiece = board->pos[(int)move->end] = board->pos[(int)move->start];
 	board->pos[(int)move->start] = EMPTY;
 
@@ -856,6 +856,8 @@ void addAllMoves(LegalMoves *moves, int start, long mask){
 
 		moves->moves[moves->count].start = start;
 		moves->moves[moves->count].end = p;
+		moves->moves[moves->count].enpassent = -1;
+		moves->moves[moves->count].promo = 0;
 		moves->count++;
 	}
 }
@@ -944,6 +946,8 @@ int getPawnAttack(int start, int tmp, Board *board, int attacking, LegalMoves * 
 		}
 		moves->moves[moves->count].start = start;
 		moves->moves[moves->count].end = tmp;
+		moves->moves[moves->count].enpassent = -1;
+		moves->moves[moves->count].promo = 0;
 		moves->count++;
 
     return attacking;
@@ -959,13 +963,16 @@ int getPawnAttack(int start, int tmp, Board *board, int attacking, LegalMoves * 
       for(i= 1;i <= 5;i++) {
         moves->moves[moves->count].start = start;
         moves->moves[moves->count].end = tmp;
+		moves->moves[moves->count].enpassent = -1;
         moves->moves[moves->count].promo = i * board->turn;
         moves->count++;
       }
 		} else {
-      moves->moves[moves->count].start = start;
-      moves->moves[moves->count].end = tmp;
-      moves->count++;
+		moves->moves[moves->count].start = start;
+		moves->moves[moves->count].end = tmp;
+		moves->moves[moves->count].enpassent = -1;
+		moves->moves[moves->count].promo = 0;
+		moves->count++;
 		}
 	}
 
@@ -978,12 +985,16 @@ void getPawnMove(int start, int tmp, Board *board, LegalMoves * moves, int promo
       for(int i = 1;i <= 5;i++) {
         moves->moves[moves->count].start = start;
         moves->moves[moves->count].end = tmp;
+		moves->moves[moves->count].enpassent = -1;
         moves->moves[moves->count].promo = i * board->turn;
         moves->count++;
       }
 		} else {
       moves->moves[moves->count].start = start;
       moves->moves[moves->count].end = tmp;
+	  moves->moves[moves->count].enpassent = -1;
+	  moves->moves[moves->count].promo = 0;
+	  
       moves->count++;
 		}
 	}
