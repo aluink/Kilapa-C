@@ -880,8 +880,7 @@ int getBishopMoves(int attacking, LegalMoves* moves, Board *board, unsigned long
 		
 		if(!attacking){
 			addAllMoves(moves, start, occ & ~allBoard);
-		} else if(attack != 0){
-      printBBoard(attack);
+		} else if(attack != 0){      
 			addAllMoves(moves, start, attack);
 		}
 	}

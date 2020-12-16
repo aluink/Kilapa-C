@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <time.h>
 #include <fcntl.h>
 
 #include "board.h"
+#include "core.h"
+#include "kilapa.h"
 
-#define COMMAND_COUNT 8
+#define COMMAND_COUNT 9
 #define _CRT_SECURE_NO_WARNINGS
 
 typedef struct _ClientState {
@@ -47,11 +50,11 @@ int handle_command(char *buffer, ClientState *state) {
     for (int i = 0;i < COMMAND_COUNT;i++){
         if (!strncmp(buffer, state->command_names[i], strlen(state->command_names[i]))) {
             state->command_funcs[i](state);
-            return 0;
+            return 1;
         }
     }
 
-    return 1;
+    return 0;
 }
 
 void printLMs_command(ClientState *state) {
@@ -59,16 +62,15 @@ void printLMs_command(ClientState *state) {
     
     get_legal_moves(state->board, &lms);
 
-    printf("StartLMS Print:\n");
     printf("Count: %d\n", lms.count);
     for(int i = 0;i < lms.count;i++){
         char startCol = (lms.moves[i].start % (short)8) + 'a';
         char startRow = (lms.moves[i].start / (short)8) + '1';
         char endCol = (lms.moves[i].end % (short)8) + 'a';
         char endRow = (lms.moves[i].end / (short)8) + '1';
-        printf("%c%c%c%c\n", startCol, startRow, endCol, endRow);
+        printf("\t%c%c%c%c\n", startCol, startRow, endCol, endRow);
     }
-    printf("EndLMS Print:\n");
+    printf("\n");
 }
 
 void xboard_command(ClientState *state) {}
@@ -83,21 +85,47 @@ void set_fen(ClientState *state) {
     }
 }
 
-int move_is_legal(Move *move, LegalMoves *moves) {
-    for (int i = 0;i < moves->count;i++) {
-        if (moves->moves[i].start == move->start && moves->moves[i].end == move->end)
-            return 1;
+void test_command(ClientState *state) { }
+
+int check_command_move(ClientState *state, Move *move) {
+    LegalMoves lms;
+    int colStart = state->command_buffer[0] - 'a';
+    int rowStart = state->command_buffer[1] - '1';
+    int colEnd = state->command_buffer[2] - 'a';
+    int rowEnd = state->command_buffer[3] - '1';
+
+    move->start = rowStart * 8 + colStart;
+    move->end = rowEnd * 8 + colEnd;
+
+    if (move->start < 0 || move->start > 63 || move->end < 0 || move->end > 63) {
+        return 0;
     }
-    return 0;
+
+    get_legal_moves(state->board, &lms);
+
+    for (int i = 0;i < lms.count;i++) {
+        if (lms.moves[i].start == move->start && lms.moves[i].end == move->end)
+            return TRUE;
+    }
+    return FALSE;
 }
 
-void test_command(ClientState *state) { }
+void go_command(ClientState *state) {
+    LegalMoves lms;
+    Move *m;
+    get_legal_moves(state->board, &lms);
+
+    m = choose_move(state->board, &lms);
+
+    make_move(state->board, m);
+    printBoard(state->board);
+}
 
 int main(int argc, char *argv[]) {
     ClientState *state = malloc(sizeof(ClientState));
     ssize_t read_size;
     size_t buffer_size = 256;
-    // LegalMoves lms;
+    Move move;
     
     signal(SIGTERM, SIG_IGN);
     signal(SIGTERM, SIG_IGN);
@@ -112,7 +140,8 @@ int main(int argc, char *argv[]) {
         *print_command,
         *set_fen,
         *test_command,
-        *xboard_command
+        *xboard_command,
+        *go_command
     };
 
     char *command_names[COMMAND_COUNT] = {
@@ -123,7 +152,8 @@ int main(int argc, char *argv[]) {
         "print",
         "loadFen",
         "test",
-        "xboard"
+        "xboard",
+        "go"
     };
 
     state->command_funcs = funcs;
@@ -132,31 +162,20 @@ int main(int argc, char *argv[]) {
     magic_init();
 
     while(1) {
-        // printf("Enter command: ");
+        printf("Enter command: ");
         read_size = getline(&state->command_buffer, &buffer_size, stdin);
-        state->command_buffer[read_size - 1] = (char)NULL;
+        state->command_buffer[read_size - 1] = 0;
 
         if (!strcmp(state->command_buffer, "quit")) {
             break;
         } else if (handle_command(state->command_buffer, state)) {
-            // int colStart = state->command_buffer[0] - 'a';
-            // int rowStart = state->command_buffer[1] - '1';
-            // int colEnd = state->command_buffer[2] - 'a';
-            // int rowEnd = state->command_buffer[3] - '1';
-
-            // Move *m = malloc(sizeof(Move));
-            // m->start = rowStart * 8 + colStart;
-            // m->end = rowEnd * 8 + colEnd;
-
-            // get_legal_moves(state->board, &lms);
-            // if (move_is_legal(m, &lms)) {
-            //     make_move(state->board, m);
-            //     printBoard(state->board);
-            // } else {
-            //     printf("Illegal Move\n");
-            // }
-
             continue;
+        } else if (check_command_move(state, &move)) {
+            make_move(state->board, &move);
+            printBoard(state->board);
+            continue;
+        } else {
+            printDebug("Illegal move\n");
         }
     }
 
