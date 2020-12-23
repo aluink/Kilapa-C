@@ -138,14 +138,10 @@ void go_command(ClientState *state) {
 
 int main(int argc, char *argv[]) {
     ClientState *state = malloc(sizeof(ClientState));
-    ssize_t read_size;
-    size_t buffer_size = 256;
     Move move;
     
     signal(SIGTERM, SIG_IGN);
-    signal(SIGTERM, SIG_IGN);
-
-    state->command_buffer = malloc(256);
+    signal(SIGINT, SIG_IGN);    
 
     void (*funcs[COMMAND_COUNT])(ClientState *) = {
         *new_command,
@@ -171,6 +167,7 @@ int main(int argc, char *argv[]) {
         "go"
     };
 
+    state->command_buffer = malloc(256);
     state->board = NULL;
     state->command_funcs = funcs;
     state->command_names = command_names;
@@ -178,16 +175,16 @@ int main(int argc, char *argv[]) {
 
     magic_init();
 
+    write(STDOUT_FILENO, "feature debug=1\n", 16);
+
     while(1) {
         if (state->board != NULL && state->engine_turn == state->board->turn) {
             go_command(state);
             continue;
         }
-
-        printDebug("Enter command: ");
-        read_size = getline(&state->command_buffer, &buffer_size, stdin);
-        state->command_buffer[read_size - 1] = 0;
-
+        printDebug("Enter command: \n");
+        fgets(state->command_buffer, 256, stdin);
+        state->command_buffer[strlen(state->command_buffer) - 1] = '\0';
         if (!strcmp(state->command_buffer, "quit")) {
             break;
         } else if (handle_command(state->command_buffer, state)) {
@@ -197,7 +194,9 @@ int main(int argc, char *argv[]) {
             if (!getXboardMode()) printBoard(state->board);
             continue;
         } else {
-            printDebug("Illegal move\n");
+            write(STDOUT_FILENO, "# ignoring: ", 12);
+            write(STDOUT_FILENO, state->command_buffer, strlen(state->command_buffer));
+            write(STDOUT_FILENO, "\n", 1);    
         }
     }
 

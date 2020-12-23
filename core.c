@@ -29,9 +29,6 @@ void printDebug(const char *fmt, ...) {
   va_list vargs;
   va_start(vargs, fmt);
 
-  // if (!xboardMode) 
-  return;
-  
   write(STDOUT_FILENO, "# ", 2);
-  write(STDOUT_FILENO, buffer, vsnprintf(buffer, 256, fmt, vargs) + 1);
+  write(STDOUT_FILENO, buffer, vsnprintf(buffer, 256, fmt, vargs));
 }
