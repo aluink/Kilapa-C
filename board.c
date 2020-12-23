@@ -3,6 +3,7 @@
 #include <strings.h>
 
 #include "board.h"
+#include "core.h"
 
 #define LEFT -1
 #define RIGHT 1
@@ -647,7 +648,7 @@ Board * newBoard() {
 	int i, error;
 	Board * board = malloc(sizeof(Board));
 
-  load_fen(board, "rnbqkbnr/ppPppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w", &error);
+  load_fen(board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w", &error);
   return board;
 
 
@@ -716,7 +717,7 @@ void load_fen(Board *board, char * fen, int *error) {
   int row = 7, col = 0, idx = 0;
   char c;
 
-  printf("loading fen: %s\n", fen);
+  printDebug("loading fen: %s\n", fen);
 
   for (int i = 0;i < 64;i++) {
     board->pos[i] = EMPTY;
@@ -752,7 +753,7 @@ void load_fen(Board *board, char * fen, int *error) {
     c = fen[idx++];
 
     if (!(row == 0 && c == ' ') && !(row >= 0 && c == '/')) {
-      printf("idx: %d\nchar: %c\nrow: %d, col: %d\n", idx, c, row, col);
+      printDebug("idx: %d\nchar: %c\nrow: %d, col: %d\n", idx, c, row, col);
       *error = 1;
       return;
     }
@@ -782,9 +783,9 @@ const char * piece_name(int piece) {
 }
 
 void printBoard(Board *board) {
-  printf("%s to move", board->turn == WHITE ? "WHITE" : "BLACK");
+  printf("# %s to move\n", board->turn == WHITE ? "WHITE" : "BLACK");
 	for (int row = 7;row >= 0; row--) {
-		printf("\n   +---+---+---+---+---+---+---+---+\n %d ", row+1);
+		printf("\n#   +---+---+---+---+---+---+---+---+\n# %d ", row+1);
 		for (int col = 0;col < 8;col++) {
 			char c;
 			int piece = ((int)board->pos[row*8+col]);
@@ -804,18 +805,21 @@ void printBoard(Board *board) {
 		}	
 		printf("|");
 	}
-	printf("\n   +---+---+---+---+---+---+---+---+");
-	printf("\n     A   B   C   D   E   F   G   H\n\n");
+	printf("\n#   +---+---+---+---+---+---+---+---+");
+	printf("\n#     A   B   C   D   E   F   G   H\n\n");
+  fflush(stdout);
 }
 
 void printBBoard(unsigned long long board) {
 	for(int row = 7;row >= 0;row--) {
+    printf("# ");
 		for(int col = 0;col < 8;col++) {
 			printf("%llu", board >> (row * 8 + col) & 1);
 		}
 		printf("\n");
 	}
 	printf("\n");
+  fflush(stdout);
 }
 
 void printBBoards(Board *board) {
@@ -824,6 +828,7 @@ void printBBoards(Board *board) {
 		printBBoard(board->bitboards[i]);
 		printf("\n");
 	}
+  fflush(stdout);
 }
 
 void make_move(Board *board, Move *move) {
@@ -832,8 +837,7 @@ void make_move(Board *board, Move *move) {
 	board->pos[(int)move->start] = EMPTY;
 
 	int bb_idx = movingPiece < 0 ? -movingPiece - 1 : movingPiece + 5;
-	printf("%d %d\n", movingPiece, bb_idx);
-
+	
 	board->bitboards[bb_idx] &= ~(1ULL << move->start);
 	board->bitboards[bb_idx] |= 1ULL << move->end;
 
@@ -1091,4 +1095,13 @@ void get_legal_moves(Board *board, LegalMoves *lms) {
 			allBoard,
 			otherBoard);
 	}
+}
+
+int snprintMove(char * str, size_t size, Move * move) {
+  return snprintf(str, size, "%c%c%c%c",
+    move->start % 8 + 'a',
+    move->start / 8 + '1',
+    move->end % 8 + 'a',
+    move->end / 8 + '1'
+  );
 }

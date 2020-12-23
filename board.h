@@ -1,6 +1,8 @@
 #ifndef __board_h
 #define __board_h
 
+#include <stdio.h>
+
 typedef enum _Piece {
 	EMPTY = 0,
 	KING, QUEEN, ROOK, KNIGHT, BISHOP, PAWN
@@ -41,6 +43,6 @@ void magic_init();
 void load_fen(Board *board, char *fen, int *error);
 void get_legal_moves(Board *board, LegalMoves *lms);
 void printBBoard(unsigned long long board);
-
+int snprintMove(char * str, size_t size, Move * move);
 
 #endif

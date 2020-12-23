@@ -1,5 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <stdarg.h>
 
 #include <stdlib.h>
 
@@ -14,16 +16,22 @@ u64 getRandom() {
   return (u64)((hi << 32 & 0xFFFFFFFF00000000ULL) | (lo & 0xFFFFFFFFULL));
 }
 
-void setXboard(char val) {
+void setXboardMode(char val) {
   xboardMode = val;
 }
 
+int getXboardMode() {
+  return xboardMode;
+}
+
 void printDebug(const char *fmt, ...) {
+  char buffer[256];
   va_list vargs;
   va_start(vargs, fmt);
 
-  if (xboardMode) printf("# ");
-
-  vprintf(fmt, vargs);
-  fflush(stdout);
+  // if (!xboardMode) 
+  return;
+  
+  write(STDOUT_FILENO, "# ", 2);
+  write(STDOUT_FILENO, buffer, vsnprintf(buffer, 256, fmt, vargs) + 1);
 }

@@ -1,9 +1,10 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <time.h>
 #include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "board.h"
 #include "core.h"
@@ -17,32 +18,30 @@ typedef struct _ClientState {
     void (**command_funcs) (struct _ClientState*); 
     char **command_names;
     char *command_buffer;
+    char engine_turn;
 } ClientState;
 
 void print_command(ClientState * state) {
     if (state->board) {
         printBoard(state->board);
-    } else {
-        printf("No board to print\n");
     }
 }
 
 void new_command (ClientState *state) {
     state->board = newBoard();
-    
+
+    state->engine_turn = BLACK;
 }
 
 void print_commands_command(ClientState *state) {
     for (int i = 0;i < COMMAND_COUNT;i++) {
-        printf("%s\n", state->command_names[i]);
+        printDebug("%s\n", state->command_names[i]);
     }
 }
 
 void printB_command(ClientState *state) {
     if (state->board) {
         printBBoards(state->board);
-    } else {
-        printf("No board to print\n");
     }
 }
 
@@ -62,7 +61,7 @@ void printLMs_command(ClientState *state) {
     
     get_legal_moves(state->board, &lms);
 
-    printf("Count: %d\n", lms.count);
+    printDebug("Count: %d\n", lms.count);
     for(int i = 0;i < lms.count;i++){
         char startCol = (lms.moves[i].start % (short)8) + 'a';
         char startRow = (lms.moves[i].start / (short)8) + '1';
@@ -77,12 +76,14 @@ void printLMs_command(ClientState *state) {
             case BISHOP: promo = 'B'; break;
             default: promo = ' '; break;
         }
-        printf("\t%c%c%c%c%c\n", startCol, startRow, endCol, endRow, promo);
+        printDebug("\t%c%c%c%c%c\n", startCol, startRow, endCol, endRow, promo);
     }
-    printf("\n");
+    printDebug("\n");
 }
 
-void xboard_command(ClientState *state) {}
+void xboard_command(ClientState *state) {
+    setXboardMode(TRUE);
+}
 
 void set_fen(ClientState *state) {
     int error;
@@ -90,7 +91,7 @@ void set_fen(ClientState *state) {
     load_fen(state->board, fen, &error);
 
     if (error) {
-        printf("Invalid fen\n");
+        printDebug("Invalid fen\n");
     }
 }
 
@@ -125,12 +126,14 @@ int check_command_move(ClientState *state, Move *move) {
 void go_command(ClientState *state) {
     LegalMoves lms;
     Move *m;
+    char buffer[8];
+
     get_legal_moves(state->board, &lms);
-
     m = choose_move(state->board, &lms);
-
     make_move(state->board, m);
-    printBoard(state->board);
+    write(STDOUT_FILENO, "move ", 5);
+    write(STDOUT_FILENO, buffer, snprintMove(buffer, 8, m) + 1);
+    write(STDERR_FILENO, "\n", 1);
 }
 
 int main(int argc, char *argv[]) {
@@ -168,13 +171,20 @@ int main(int argc, char *argv[]) {
         "go"
     };
 
+    state->board = NULL;
     state->command_funcs = funcs;
     state->command_names = command_names;
+    state->engine_turn = 0;
 
     magic_init();
 
     while(1) {
-        printf("Enter command: ");
+        if (state->board != NULL && state->engine_turn == state->board->turn) {
+            go_command(state);
+            continue;
+        }
+
+        printDebug("Enter command: ");
         read_size = getline(&state->command_buffer, &buffer_size, stdin);
         state->command_buffer[read_size - 1] = 0;
 
@@ -182,9 +192,9 @@ int main(int argc, char *argv[]) {
             break;
         } else if (handle_command(state->command_buffer, state)) {
             continue;
-        } else if (check_command_move(state, &move)) {
+        } else if (state->board && check_command_move(state, &move)) {
             make_move(state->board, &move);
-            printBoard(state->board);
+            if (!getXboardMode()) printBoard(state->board);
             continue;
         } else {
             printDebug("Illegal move\n");

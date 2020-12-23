@@ -10,5 +10,6 @@ u64 getRandom();
 
 void printDebug(const char *fmt, ...);
 void setXboardMode(char val);
+int getXboardMode();
 
 #endif
