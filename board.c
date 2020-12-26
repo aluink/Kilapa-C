@@ -704,12 +704,7 @@ Board * newBoard() {
 
 void set_pos(Board *board, int pos, int piece, int color) {
   board->pos[pos] = piece * color;
-  for (int i = 0;i < 12;i++) {
-    board->bitboards[i] &= ~(1ULL << pos);
-  }
-
   board->bitboards[piece + (color == BLACK ? -1 : 5)] |= 1ULL << pos;
-
 }
 
 void load_fen(Board *board, char * fen, int *error) {
@@ -829,6 +824,20 @@ void printBBoards(Board *board) {
 		printf("\n");
 	}
   fflush(stdout);
+}
+
+void unmake_move(Board *board, Move *move) {
+  // Put the piece back to where it came from
+  char piece = move->promo == 0 ? board->pos[(int)move->end] : move->promo;
+  char color = piece < 0 ? BLACK : WHITE;
+  
+  set_pos(board, move->start, piece * color, color);
+
+  if (move->capturePiece) {
+    color = move->capturePiece < 0 ? BLACK : WHITE;
+    set_pos(board, move->end, move->capturePiece * color, color);
+  }
+
 }
 
 void make_move(Board *board, Move *move) {

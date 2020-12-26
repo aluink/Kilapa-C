@@ -3,6 +3,6 @@
 
 #include "board.h"
 
-Move * choose_move(Board *board, LegalMoves *lms);
+Move choose_move(Board *board);
 
 #endif

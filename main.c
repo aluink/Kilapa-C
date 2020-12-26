@@ -123,16 +123,23 @@ int check_command_move(ClientState *state, Move *move) {
     return FALSE;
 }
 
+void sigInt(int val) {
+    printDebug("Got SIGINT: %d\n", val);
+}
+
+
+void sigTerm(int val) {
+    printDebug("Got SIGTERM: %d\n", val);
+}
+
 void go_command(ClientState *state) {
-    LegalMoves lms;
-    Move *m;
+    Move m;
     char buffer[8];
 
-    get_legal_moves(state->board, &lms);
-    m = choose_move(state->board, &lms);
-    make_move(state->board, m);
+    m = choose_move(state->board);
+    make_move(state->board, &m);
     write(STDOUT_FILENO, "move ", 5);
-    write(STDOUT_FILENO, buffer, snprintMove(buffer, 8, m) + 1);
+    write(STDOUT_FILENO, buffer, snprintMove(buffer, 8, &m) + 1);
     write(STDERR_FILENO, "\n", 1);
 }
 
@@ -140,8 +147,8 @@ int main(int argc, char *argv[]) {
     ClientState *state = malloc(sizeof(ClientState));
     Move move;
     
-    signal(SIGTERM, SIG_IGN);
-    signal(SIGINT, SIG_IGN);    
+    signal(SIGTERM, sigTerm);
+    signal(SIGINT, sigInt);    
 
     void (*funcs[COMMAND_COUNT])(ClientState *) = {
         *new_command,

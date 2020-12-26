@@ -12,6 +12,11 @@ typedef enum _Color {
 	BLACK = -1, NONE, WHITE
 } Color;
 
+typedef enum _BBPieceIdx {
+	BKING = 0, BQUEEN, BROOK, BKNIGHT, BBISHOP, BPAWN,
+	WKING, WQUEEN, WROOK, WKNIGHT, WBISHOP, WWPAWN
+} BBPieceIdx;
+
 typedef struct {
 	int pos[64];
 	unsigned long long bitboards[12];
@@ -38,6 +43,7 @@ Board * newBoard();
 void printBoard(Board *board);
 void printBBoards(Board *board);
 void make_move(Board *board, Move *move);
+void unmake_move(Board *board, Move *move);
 void print_move(Move *move);
 void magic_init();
 void load_fen(Board *board, char *fen, int *error);
