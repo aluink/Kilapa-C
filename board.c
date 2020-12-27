@@ -849,7 +849,6 @@ void unmake_move(Board *board, Move *move) {
   if (move->enpassent) {
     set_pos(board, move->enpassent + (color == BLACK ? 40 : 16), PAWN, color);
   }
-
 }
 
 void make_move(Board *board, Move *move) {

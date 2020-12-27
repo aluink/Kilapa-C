@@ -10,7 +10,7 @@
 #include "core.h"
 #include "kilapa.h"
 
-#define COMMAND_COUNT 9
+#define COMMAND_COUNT 12
 #define _CRT_SECURE_NO_WARNINGS
 
 typedef struct _ClientState {
@@ -19,6 +19,8 @@ typedef struct _ClientState {
     char **command_names;
     char *command_buffer;
     char engine_turn;
+    char *moves_played[256];
+    int current_move;
 } ClientState;
 
 void print_command(ClientState * state) {
@@ -123,6 +125,14 @@ int check_command_move(ClientState *state, Move *move) {
     return FALSE;
 }
 
+void force_command(ClientState *state) {
+    state->engine_turn = EMPTY;
+}
+
+void undo_command(ClientState *state) {
+    
+}
+
 void sigInt(int val) {
     printDebug("Got SIGINT: %d\n", val);
 }
@@ -132,7 +142,7 @@ void sigTerm(int val) {
     printDebug("Got SIGTERM: %d\n", val);
 }
 
-void go_command(ClientState *state) {
+void engine_makemove(ClientState *state) {
     Move m;
     char buffer[8];
 
@@ -143,13 +153,16 @@ void go_command(ClientState *state) {
     write(STDERR_FILENO, "\n", 1);
 }
 
-int main(int argc, char *argv[]) {
-    ClientState *state = malloc(sizeof(ClientState));
-    Move move;
-    
-    signal(SIGTERM, sigTerm);
-    signal(SIGINT, sigInt);    
+void go_command(ClientState *state) {
+    state->engine_turn = state->board->turn;
+    engine_makemove(state);
+}
 
+void quit_command(ClientState *state) {
+    exit(0);
+}
+
+void init_client_state(ClientState *state) {
     void (*funcs[COMMAND_COUNT])(ClientState *) = {
         *new_command,
         *print_commands_command,
@@ -159,7 +172,10 @@ int main(int argc, char *argv[]) {
         *set_fen,
         *test_command,
         *xboard_command,
-        *go_command
+        *go_command,
+        *force_command,
+        *undo_command,
+        *quit_command
     };
 
     char *command_names[COMMAND_COUNT] = {
@@ -171,7 +187,10 @@ int main(int argc, char *argv[]) {
         "loadFen",
         "test",
         "xboard",
-        "go"
+        "go",
+        "force",
+        "undo",
+        "quit"
     };
 
     state->command_buffer = malloc(256);
@@ -179,6 +198,17 @@ int main(int argc, char *argv[]) {
     state->command_funcs = funcs;
     state->command_names = command_names;
     state->engine_turn = 0;
+    state->current_move = 0;
+}
+
+int main(int argc, char *argv[]) {
+    ClientState *state = malloc(sizeof(ClientState));
+    Move move;
+    
+    signal(SIGTERM, sigTerm);
+    signal(SIGINT, sigInt);    
+
+    init_client_state(state);
 
     magic_init();
 
@@ -186,15 +216,13 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         if (state->board != NULL && state->engine_turn == state->board->turn) {
-            go_command(state);
+            engine_makemove(state);
             continue;
         }
         printDebug("Enter command: \n");
         fgets(state->command_buffer, 256, stdin);
         state->command_buffer[strlen(state->command_buffer) - 1] = '\0';
-        if (!strcmp(state->command_buffer, "quit")) {
-            break;
-        } else if (handle_command(state->command_buffer, state)) {
+        if (handle_command(state->command_buffer, state)) {
             continue;
         } else if (state->board && check_command_move(state, &move)) {
             make_move(state->board, &move);
