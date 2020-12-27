@@ -828,14 +828,26 @@ void printBBoards(Board *board) {
 
 void unmake_move(Board *board, Move *move) {
   // Put the piece back to where it came from
-  char piece = move->promo == 0 ? board->pos[(int)move->end] : move->promo;
+  char piece = board->pos[(int)move->end];
   char color = piece < 0 ? BLACK : WHITE;
+
+  if (move->promo) {
+    piece = PAWN;
+  }
   
   set_pos(board, move->start, piece * color, color);
 
-  if (move->capturePiece) {
-    color = move->capturePiece < 0 ? BLACK : WHITE;
+  // color is now the opponent's color
+  color *= -1;
+  
+  if (move->capturePiece) {    
     set_pos(board, move->end, move->capturePiece * color, color);
+  } else {
+    set_pos(board, move->end, EMPTY, BLACK);
+  }
+
+  if (move->enpassent) {
+    set_pos(board, move->enpassent + (color == BLACK ? 40 : 16), PAWN, color);
   }
 
 }
@@ -959,7 +971,7 @@ int getPawnAttack(int start, int tmp, Board *board, int attacking, LegalMoves * 
 		}
 		moves->moves[moves->count].start = start;
 		moves->moves[moves->count].end = tmp;
-		moves->moves[moves->count].enpassent = -1;
+		moves->moves[moves->count].enpassent = tmp % 8;
 		moves->moves[moves->count].promo = 0;
 		moves->count++;
 
@@ -976,7 +988,7 @@ int getPawnAttack(int start, int tmp, Board *board, int attacking, LegalMoves * 
       for(i= 1;i <= 5;i++) {
         moves->moves[moves->count].start = start;
         moves->moves[moves->count].end = tmp;
-		moves->moves[moves->count].enpassent = -1;
+		    moves->moves[moves->count].enpassent = -1;
         moves->moves[moves->count].promo = i * board->turn;
         moves->count++;
       }
@@ -998,15 +1010,15 @@ void getPawnMove(int start, int tmp, Board *board, LegalMoves * moves, int promo
       for(int i = 1;i <= 5;i++) {
         moves->moves[moves->count].start = start;
         moves->moves[moves->count].end = tmp;
-		moves->moves[moves->count].enpassent = -1;
+		    moves->moves[moves->count].enpassent = -1;
         moves->moves[moves->count].promo = i * board->turn;
         moves->count++;
       }
 		} else {
       moves->moves[moves->count].start = start;
       moves->moves[moves->count].end = tmp;
-	  moves->moves[moves->count].enpassent = -1;
-	  moves->moves[moves->count].promo = 0;
+      moves->moves[moves->count].enpassent = -1;
+      moves->moves[moves->count].promo = 0;
 	  
       moves->count++;
 		}

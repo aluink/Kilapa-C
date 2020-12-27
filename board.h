@@ -27,7 +27,7 @@ typedef struct {
 typedef struct {
 	char start;
 	char end;
-	char enpassent;
+	char enpassent; // the vicim piece's row
 	char capturePiece;
 	char promo;
 } Move;
